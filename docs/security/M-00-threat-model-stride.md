@@ -59,11 +59,10 @@ Fronteiras de confiança:
 - Segredos só no Supabase. Repositório e bundle do cliente não contêm chave nenhuma.
 - Resposta da função é opaca: ok ou erro genérico, sem detalhe que ajude um atacante.
 
-## 5. Itens que dependem do Gate G0
+## 5. Itens do Gate G0 (resolvido em 2026-06-17)
 
-- Confirmar o uso de Turnstile já no MVP ou deixar como flag.
-- Confirmar a janela e o limite do rate limit por IP.
-- Confirmar se user_agent é mesmo necessário ou se fere minimização (ver doc LGPD).
+- user_agent: mantido para anti-abuso e suporte. Decisão em M-00-G0-decisoes.md.
+- Em aberto para a M-03, não bloqueiam o G0: Turnstile já no MVP ou como flag, e a janela e o limite exatos do rate limit por IP. Definir junto com a Edge Function.
 
 ## 6. Critérios de aceite da M-00 (parte threat model)
 

@@ -21,12 +21,12 @@ Status: proposta para revisão no Gate G0. Nenhuma migration ou código de featu
 | nome | Sim | Não | Identifica o Guardião e personaliza o contato. |
 | email | Sim | Não | Canal de contato B2B. É o dado central da finalidade. |
 | cargo | Sim | Não | Qualifica o lead de GRC. Baixo risco. |
-| genero | Não | Pode ser sensível | Baixo valor para lead B2B. Mantido como pedido, opcional, com Prefiro não informar. Recomendação registrada de remover numa versão futura. |
+| genero | Não | Pode ser sensível | Baixo valor para lead B2B. G0: mantido, opcional, opções Feminino, Masculino, Outro. Em branco equivale a não informar. Recomendação de reavaliar numa versão futura segue de pé. |
 | consentimento | Sim | Não | Prova da base legal. Obrigatório true. |
-| user_agent | A confirmar | Não | Útil para anti-abuso e suporte, mas é dado de navegação. Avaliar no G0 se fica ou sai por minimização. |
+| user_agent | Sim | Não | G0: mantido para anti-abuso e suporte. É dado de navegação, tratado dentro da mesma finalidade e retenção. |
 | modo_jogado, score_final | Não pessoal | Não | Dado de jogo, não identifica o titular sozinho. |
 
-Princípio: coletar o mínimo. Gênero e user_agent são os dois pontos de atrito com a minimização. Decisão fica com o humano no G0.
+Princípio: coletar o mínimo. Gênero e user_agent foram avaliados no G0 e mantidos com justificativa. Decisões em M-00-G0-decisoes.md.
 
 ## 4. Direitos do titular
 
@@ -42,8 +42,9 @@ Implicação técnica: a base precisa permitir localizar por email e apagar ou a
 ## 5. Retenção e descarte
 
 - Reter enquanto houver relação comercial ativa ou interesse de contato, dentro da finalidade consentida.
-- Definir um prazo de revisão. Proposta inicial: revisar leads sem interação após 24 meses, com descarte ou anonimização. Confirmar no G0.
+- G0: revisar leads sem interação após 24 meses, com descarte ou anonimização.
 - Revogação de consentimento dispara descarte ou anonimização do registro.
+- Procedimento manual no MVP, via perfil interno, usando a service role. Localiza por email, apaga ou anonimiza.
 
 ## 6. Segurança do dado
 
@@ -54,7 +55,10 @@ Implicação técnica: a base precisa permitir localizar por email e apagar ou a
 
 ## 7. Transferência internacional
 
-- Resend pode processar fora do Brasil. Tratar como transferência internacional: registrar o operador, garantir cláusulas adequadas e mencionar na política de privacidade. Confirmar a região do Resend no G0.
+- G0: o envio de email é feito pela Edge Function do Supabase, com destino único contato@cosmosec.com.br, usando o provedor Resend (chave como secret no Supabase, remetente em domínio verificado).
+- O Resend pode processar fora do Brasil. Tratar como transferência internacional: registrar o operador, garantir cláusulas adequadas e mencionar na política de privacidade.
+- Minimização do email: enviar só o necessário do lead para o time de contato. Evitar despejar todo o registro.
+- Alternativa em aberto, decidível na M-03: trocar Resend por SMTP em região BR para evitar a transferência internacional. Mantida como opção, não bloqueia o MVP.
 
 ## 8. Transparência e consentimento (texto da UI)
 
@@ -62,13 +66,13 @@ Implicação técnica: a base precisa permitir localizar por email e apagar ou a
 - Link visível para a política de privacidade.
 - Sem overclaim de privacidade. Não afirmar conformidade com a ANPD nem certificação. Nada de aprovado pela ANPD.
 
-## 9. Itens que dependem do Gate G0
+## 9. Gate G0 (resolvido em 2026-06-17, ver M-00-G0-decisoes.md)
 
-- Manter ou remover genero já no MVP.
-- Manter ou remover user_agent por minimização.
-- Prazo de retenção e gatilho de revisão.
-- Confirmar região e cláusulas do Resend para a transferência internacional.
-- Texto final e URL da política de privacidade.
+- [x] genero mantido, opcional, opções Feminino, Masculino, Outro.
+- [x] user_agent mantido para anti-abuso e suporte.
+- [x] Retenção: revisão após 24 meses, revogação dispara descarte ou anonimização.
+- [x] Envio via Edge Function do Supabase usando Resend, destino único contato@cosmosec.com.br. Transferência internacional tratada, com alternativa de SMTP BR em aberto para a M-03.
+- [ ] Pendente para a M-02: texto final e URL da política de privacidade. Não bloqueia o G0.
 
 ## 10. Critérios de aceite da M-00 (parte LGPD)
 
