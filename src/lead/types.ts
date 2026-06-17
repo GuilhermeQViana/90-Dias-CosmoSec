@@ -50,3 +50,18 @@ export interface LeadPayload {
   consentimento: true
   honeypot: string
 }
+
+// Resultado da captura, comum ao mock e ao cliente HTTP real.
+export interface CaptureResult {
+  ok: boolean
+  // id do lead, usado depois para atualizar o score. null se descartado.
+  leadId: string | null
+  // descartado por honeypot. Do ponto de vista do jogo, segue normal.
+  dropped: boolean
+}
+
+// Segundo POST, ao fim da partida.
+export interface MatchResult {
+  modoJogado: string
+  scoreFinal: number
+}
