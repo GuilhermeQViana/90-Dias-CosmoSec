@@ -13,6 +13,10 @@ export interface GameMode {
   dificuldade: Dificuldade
   alvoPostura: number
   prazoDias: number
+  // Minimo de controles selados exigido para vencer. Regra de vitoria do modo.
+  minControlesSelados: number
+  // Se true, a vitoria so fecha jogando Publicar Trust Center (modo RFP).
+  exigeTrustCenter: boolean
   regra: string
   licao: string
 }
@@ -26,6 +30,8 @@ export const MODES: readonly GameMode[] = [
     dificuldade: 'Iniciante',
     alvoPostura: 70,
     prazoDias: 90,
+    minControlesSelados: 4,
+    exigeTrustCenter: false,
     regra: 'Prova selada vale dobrado. Auditoria Surpresa e frequente.',
     licao: 'Prova lacrada vence o improviso.',
   },
@@ -37,6 +43,8 @@ export const MODES: readonly GameMode[] = [
     dificuldade: 'Avancada',
     alvoPostura: 80,
     prazoDias: 75,
+    minControlesSelados: 4,
+    exigeTrustCenter: false,
     regra: 'Exige o Campo BACEN CMN com residencia sa-east-1 ativo. Prazo Apertado e Achado Critico frequentes.',
     licao: 'O crosswalk BCB CMN e LGPD e o moat, uma prova vale varias normas.',
   },
@@ -48,6 +56,8 @@ export const MODES: readonly GameMode[] = [
     dificuldade: 'Estrategica',
     alvoPostura: 85,
     prazoDias: 90,
+    minControlesSelados: 6,
+    exigeTrustCenter: true,
     regra: 'Campo ISO 27001 ativo e 6 controles selados. Termina com Publicar Trust Center.',
     licao: 'Demonstrar fecha negocio, o Trust Center e a arma de saida.',
   },
