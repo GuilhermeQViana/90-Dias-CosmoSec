@@ -78,7 +78,8 @@ export function selarComLacre(estado: EstadoJogo, lacreUid: string, alvoUid: str
   const jogada = {
     custoEnergia: lacre.carta.custoEnergia,
     custoDias: lacre.carta.custoDias,
-    ganhoPostura: alvo.carta.defesa,
+    // Defesa do controle mais o bonus de crosswalk pela cobertura de normas.
+    ganhoPostura: alvo.carta.defesa + bonusCrosswalk(alvo.carta.cobertura.length),
     selaControle: true,
   }
   if (!podeJogarCarta(estado.duelo, jogada)) {
@@ -116,6 +117,12 @@ export function aplicarPolitica(estado: EstadoJogo, politicaUid: string, alvoUid
     duelo: reduzir(estado.duelo, { tipo: 'jogar-carta', jogada }),
     cartas: descartarDaMao(estado.cartas, politicaUid),
   }
+}
+
+// Bonus de Postura do combo de crosswalk: a Defesa mais um extra por cada norma
+// alem da primeira que o controle cobre. E o moat virado mecanica.
+export function bonusCrosswalk(normas: number): number {
+  return Math.max(0, normas - 1) * BALANCE.CROSSWALK_BONUS_POR_NORMA
 }
 
 export function podePublicar(estado: EstadoJogo, demonstrarUid: string): boolean {

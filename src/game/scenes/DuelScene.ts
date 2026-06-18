@@ -3,6 +3,7 @@ import { colorsHex } from '@/brand/tokens'
 import { findMode, type ModeId } from '@/game/modes'
 import {
   aplicarPolitica,
+  bonusCrosswalk,
   encerrarTurno,
   iniciarDuelo,
   jogarControle,
@@ -56,10 +57,12 @@ export class DuelScene extends Phaser.Scene {
   private onFim!: (fim: DuelFim) => void
 
   private camadaCampo!: Phaser.GameObjects.Container
+  private camadaHighlight!: Phaser.GameObjects.Graphics
   private camadaMao!: Phaser.GameObjects.Container
   private camadaFx!: Phaser.GameObjects.Container
   private cartasCampo: Array<{ uid: string; obj: Phaser.GameObjects.Container }> = []
   private zonaCampo!: Phaser.Geom.Rectangle
+  private dica!: Phaser.GameObjects.Text
 
   private hudDias!: Phaser.GameObjects.Text
   private hudPosture!: Phaser.GameObjects.Text
@@ -91,6 +94,7 @@ export class DuelScene extends Phaser.Scene {
     this.montarHud()
 
     this.camadaCampo = this.add.container(0, 0)
+    this.camadaHighlight = this.add.graphics()
     this.camadaMao = this.add.container(0, 0)
     this.camadaFx = this.add.container(0, 0)
 
@@ -167,6 +171,18 @@ export class DuelScene extends Phaser.Scene {
 
     this.toast = this.add
       .text(0, 0, '', { fontFamily: 'Inter, sans-serif', fontSize: '13px', color: '#F59E0B' })
+      .setOrigin(0.5)
+      .setAlpha(0)
+
+    // Dica de onboarding: ensina o loop central nos primeiros turnos.
+    this.dica = this.add
+      .text(0, 0, 'Controles em campo nao pontuam. Solte um Lacre sobre o controle para virar prova e somar Postura.', {
+        fontFamily: 'Inter, sans-serif',
+        fontSize: '12px',
+        color: '#8FCBFF',
+        align: 'center',
+        wordWrap: { width: 460 },
+      })
       .setOrigin(0.5)
       .setAlpha(0)
   }
@@ -260,6 +276,10 @@ export class DuelScene extends Phaser.Scene {
     this.zonaCampo = new Phaser.Geom.Rectangle(width * 0.08, height * 0.34, width * 0.84, height * 0.3)
     this.desenharCampo()
     this.desenharMao()
+
+    // A dica fica enquanto nada foi selado e o jogo esta cedo.
+    const mostrarDica = this.estado.duelo.controlesSelados === 0 && this.estado.duelo.turno <= 4
+    this.dica.setPosition(width / 2, this.zonaCampo.y - 22).setAlpha(mostrarDica ? 1 : 0)
   }
 
   private desenharCampo(): void {
@@ -284,6 +304,18 @@ export class DuelScene extends Phaser.Scene {
       const obj = this.criarCarta(inst, x, y)
       this.camadaCampo.add(obj)
       this.cartasCampo.push({ uid: inst.uid, obj })
+
+      // Controle nao selado pede prova: badge warn para guiar o jogador.
+      if (!inst.selado) {
+        const badge = this.add
+          .text(x + LARGURA_CARTA / 2, y - 12, 'sele para pontuar', {
+            fontFamily: 'JetBrains Mono, monospace',
+            fontSize: '9px',
+            color: '#F59E0B',
+          })
+          .setOrigin(0.5)
+        this.camadaCampo.add(badge)
+      }
     })
   }
 
@@ -405,6 +437,18 @@ export class DuelScene extends Phaser.Scene {
     this.camadaFx.add(bloom)
     this.tweens.add({ targets: bloom, scale: 3, alpha: 0, duration: 600, onComplete: () => bloom.destroy() })
 
+    // Mostra o ganho de Postura subindo do controle selado.
+    const ganho = inst.carta.defesa + bonusCrosswalk(inst.carta.cobertura.length)
+    const ganhoTxt = this.add
+      .text(cx, cy, `+${ganho} Postura`, {
+        fontFamily: 'JetBrains Mono, monospace',
+        fontSize: '14px',
+        color: '#10B981',
+      })
+      .setOrigin(0.5)
+    this.camadaFx.add(ganhoTxt)
+    this.tweens.add({ targets: ganhoTxt, y: cy - 40, alpha: 0, duration: 900, ease: 'Cubic.out', onComplete: () => ganhoTxt.destroy() })
+
     // Combo de crosswalk: o controle cobre varias normas de uma vez.
     const n = inst.carta.cobertura.length
     if (n >= 2) {
@@ -436,10 +480,34 @@ export class DuelScene extends Phaser.Scene {
 
   // ----- Arraste -----
 
+  // Destaca os alvos validos da carta arrastada, removendo a friccao de adivinhar.
+  private mostrarAlvos(efeito: string, tipo: string): void {
+    this.camadaHighlight.clear()
+    if (tipo === 'controle' || efeito === 'demonstrar') {
+      this.camadaHighlight.lineStyle(2, colorsHex.cyan, 0.8)
+      this.camadaHighlight.strokeRoundedRect(this.zonaCampo.x, this.zonaCampo.y, this.zonaCampo.width, this.zonaCampo.height, 14)
+      return
+    }
+    const querSelado = efeito === 'politica'
+    for (const { uid, obj } of this.cartasCampo) {
+      const inst = this.estado.cartas.campo.find((c) => c.uid === uid)
+      if (!inst) continue
+      if ((efeito === 'lacre' && !inst.selado) || (querSelado && inst.selado)) {
+        this.camadaHighlight.lineStyle(2, colorsHex.cyan, 0.9)
+        this.camadaHighlight.strokeRoundedRect(obj.x - 3, obj.y - 3, LARGURA_CARTA + 6, ALTURA_CARTA + 6, RAIO)
+      }
+    }
+  }
+
+  private limparAlvos(): void {
+    this.camadaHighlight.clear()
+  }
+
   private configurarArraste(): void {
     this.input.on('dragstart', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container) => {
       this.camadaMao.bringToTop(obj)
       obj.setScale(1.05)
+      this.mostrarAlvos(obj.getData('efeito') as string, obj.getData('tipo') as string)
     })
     this.input.on('drag', (_p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container, dx: number, dy: number) => {
       obj.setPosition(dx, dy)
@@ -458,6 +526,7 @@ export class DuelScene extends Phaser.Scene {
   }
 
   private resolverSolta(p: Phaser.Input.Pointer, obj: Phaser.GameObjects.Container): void {
+    this.limparAlvos()
     const uid = obj.getData('uid') as string
     const efeito = obj.getData('efeito') as string
     const tipo = obj.getData('tipo') as string

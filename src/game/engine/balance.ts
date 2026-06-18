@@ -28,6 +28,13 @@ export const BALANCE = {
 
   // A partir de qual turno Publicar Trust Center fica jogavel (custo alto, fim de jogo).
   TURNO_MIN_TRUST_CENTER: 6,
+
+  // Combo de crosswalk: o moat virado mecanica. Selar um controle soma a Defesa
+  // mais um bonus por cada norma alem da primeira que ele cobre. Uma prova que
+  // cobre 4 normas vale muito mais que uma de 1 norma com a mesma Defesa.
+  // Quando os Campos de framework entrarem (M-07 a M-09), o multiplicador passa
+  // a depender dos Campos ativos. PROPOSTA sob gate de score.
+  CROSSWALK_BONUS_POR_NORMA: 2,
 } as const
 
 // Balanceamento do vilao 90 Dias (M-06). PROPOSTA sob gate de score (secao 14).
