@@ -1,0 +1,34 @@
+# Concept Schema
+# Populated by /game:brainstorm from the user's game idea description.
+# Lives at: .game-design/<slug>/concept.yaml
+
+genre: ""               # Primary genre (e.g. "roguelike", "idle", "platformer")
+subgenre: ""            # Optional modifier (e.g. "deckbuilder", "tower-defense")
+
+# One-sentence description of what the player does repeatedly
+core_loop: ""
+
+# Aesthetics — the experiential goals (from MDA framework)
+# Common values: sensation, fantasy, narrative, challenge, fellowship,
+#                discovery, expression, submission
+aesthetics: []
+
+# Target platform and input
+platform: ""            # e.g. "PC", "mobile", "web", "console"
+input_method: ""        # e.g. "keyboard+mouse", "touch", "gamepad"
+
+# Key mechanics identified during brainstorm
+# Each entry: short name + one-line description
+mechanics: []
+# Example:
+# - name: "grapple"
+#   description: "Player launches a hook to swing between platforms"
+
+# Scope and ambition (informed by scoping skill)
+scope:
+  target: ""            # "jam" (48h), "micro" (1-2wk), "small" (1-3mo), "medium" (3-6mo)
+  team_size: 1          # Expected team size
+  engine: ""            # e.g. "godot", "unity", "bevy", "pygame", "custom"
+
+# Brief narrative hook or elevator pitch (1-3 sentences)
+pitch: ""

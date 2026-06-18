@@ -22,3 +22,6 @@ npm-debug.log*
 # Supabase local
 supabase/.branches
 supabase/.temp
+
+# game-spice: estado de sessoes de game design (runtime)
+.game-design/

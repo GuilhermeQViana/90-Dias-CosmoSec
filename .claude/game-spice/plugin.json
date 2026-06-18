@@ -1,0 +1,31 @@
+{
+  "name": "game",
+  "description": "Game design spice for Line Cook \u2014 MLP scoping, core loop frameworks, economy design, difficulty curves, content planning, mechanics palette, playtesting, scenario walkthroughs, anti-patterns, architecture auditing, with interactive commands, code review agent, and implementation guidance",
+  "version": "0.5.1",
+  "author": {
+    "name": "smileynet"
+  },
+  "license": "MIT",
+  "keywords": [
+    "game-design",
+    "spice",
+    "line-cook",
+    "scoping",
+    "core-loop",
+    "economy",
+    "playtesting",
+    "balance",
+    "difficulty",
+    "content-planning",
+    "level-design",
+    "mechanics",
+    "accessibility",
+    "audit",
+    "architecture",
+    "plan-audit",
+    "code-quality",
+    "commands",
+    "agents",
+    "implementation"
+  ]
+}
