@@ -1,0 +1,86 @@
+# Coverage Tracking Schema
+# Created by /game:simulate on first run, updated each turn.
+# Lives at: .game-design/<slug>/simulation/coverage.yaml
+
+# 5-Beat Coverage — tracks progress through the player experience arc
+# Each beat maps to a phase of the 5-Beat Structure (see simulation-guide).
+# Per-area fields:
+#   status:     uncovered | partial | covered
+#   confidence: 0.0–1.0 (see Confidence Thresholds below)
+#   turns:      list of turn numbers that explored this beat
+beats:
+  first_contact:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  learning_the_verb:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  core_loop_in_motion:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  rising_stakes:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  session_end:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+
+# System Coverage — tracks which cross-cutting game systems have been explored
+# Systems are orthogonal to beats: a system may be touched across multiple beats.
+systems:
+  ui_layout:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  input_mapping:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  feedback_loops:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  difficulty:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+  economy:
+    status: uncovered
+    confidence: 0.0
+    turns: []
+
+# Transition Criteria — defines when simulation coverage is sufficient
+# Used by /game:simulate to determine when to suggest ending simulation.
+transition:
+  minimum:
+    description: "All beats at least partial — enough to start build-plan"
+    beats_threshold: 0.3
+    systems_required: false
+  recommended:
+    description: "All beats covered — thorough exploration complete"
+    beats_threshold: 0.7
+    systems_threshold: 0.3
+
+# Confidence Thresholds
+# These map confidence scores to status values:
+#
+#   0.0  – 0.29   → uncovered  (not meaningfully explored)
+#   0.3  – 0.69   → partial    (key questions answered, some gaps remain)
+#   0.7  – 1.0    → covered    (coverage goals met, decisions recorded)
+#
+# Confidence Calculation (per beat):
+#   Base: +0.2 per turn that explores the beat
+#   Bonus: +0.1 per decision with origin "user" recorded in the beat
+#   Bonus: +0.05 per decision with origin "suggested"
+#   No bonus for "inferred" decisions (unconfirmed)
+#   Cap at 1.0
+#
+# Confidence Calculation (per system):
+#   Base: +0.15 per turn that touches the system
+#   Bonus: +0.1 per decision related to the system
+#   Cap at 1.0

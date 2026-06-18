@@ -1,0 +1,11 @@
+# Sessions Index
+# Tracks all game design sessions for the resume flow in /game:start.
+# Lives at: .game-design/sessions.yaml
+
+sessions: []
+# Each entry:
+# - slug: "dungeon-crawler"
+#   title: "Dungeon Crawler Roguelike"
+#   phase: "simulate"        # Current workflow phase
+#   created: "2026-02-15"    # ISO 8601
+#   updated: "2026-02-15"    # ISO 8601, refreshed on every state write

@@ -1,0 +1,46 @@
+# Session State Schema
+# Created by /game:start, updated throughout the design workflow.
+# Lives at: .game-design/<slug>/state.yaml
+
+slug: ""            # URL-safe session identifier (e.g. "dungeon-crawler")
+title: ""           # Human-readable working title
+created: ""         # ISO 8601 date (e.g. "2026-02-15")
+updated: ""         # ISO 8601 date, refreshed on every write
+
+# Workflow phase — linear progression through the design pipeline
+# brainstorm: initial concept exploration (/game:brainstorm)
+# simulate:   interactive ASCII gameplay simulation (/game:simulate)
+# build-plan: GDD and tech spec generation (/game:build-plan)
+# complete:   all outputs generated
+phase: brainstorm
+
+# Simulation progress (populated during simulate phase)
+progress:
+  turn_count: 0               # Total simulation turns completed
+  last_turn: ""               # Filename of most recent turn (e.g. "turn-003.md")
+  beats_covered: 0            # Count of 5-Beat areas at "covered" status
+  beats_total: 5              # Fixed: First Contact, Learning the Verb, Core Loop in Motion, Rising Stakes, Session End
+
+# Coverage summary per 5-Beat area (updated by /game:simulate)
+# Detailed coverage with confidence scores lives in simulation/coverage.yaml
+# Values: uncovered | partial | covered (derived from confidence thresholds)
+coverage:
+  first_contact: uncovered
+  learning_the_verb: uncovered
+  core_loop_in_motion: uncovered
+  rising_stakes: uncovered
+  session_end: uncovered
+
+# Aggregate counts
+decisions:
+  total: 0                    # Total entries in decisions.log
+  by_origin:
+    user: 0                   # Explicitly stated by user
+    suggested: 0              # Agent proposed, user accepted
+    inferred: 0               # Agent extracted, not confirmed
+
+# Session flags
+flags:
+  concept_complete: false     # concept.yaml has all required fields
+  simulation_ready: false     # Enough brainstorm data to start simulation
+  plan_ready: false           # Enough simulation data to generate plan
