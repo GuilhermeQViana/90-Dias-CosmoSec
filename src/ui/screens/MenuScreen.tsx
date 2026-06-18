@@ -1,6 +1,7 @@
 import { MODES, type ModeId } from '@/game/modes'
 import { Button } from '@/ui/components/Button'
 import { StarCompass } from '@/ui/components/StarCompass'
+import { Wordmark } from '@/ui/components/Wordmark'
 
 interface MenuScreenProps {
   selectedMode: ModeId
@@ -18,12 +19,14 @@ export function MenuScreen({
   return (
     <div className="flex w-full max-w-3xl flex-col items-center gap-8 px-6 py-10 text-center">
       <header className="flex flex-col items-center gap-3">
-        <StarCompass size={72} />
-        <h1 className="font-display text-5xl font-bold tracking-tight text-white drop-shadow-[0_0_28px_rgba(34,211,238,0.3)]">
+        <StarCompass size={84} />
+        <h1 className="font-display text-6xl font-bold tracking-tight text-white drop-shadow-[0_0_32px_rgba(34,211,238,0.35)]">
           90 Dias
         </h1>
-        <p className="font-body text-sm text-blue500">
-          CosmoSec · voce foi nomeado Guardiao da Constelacao da sua organizacao.
+        <Wordmark variante="escuro" tamanho={20} comSimbolo={false} />
+        <p className="max-w-md font-body text-sm text-blue300">
+          Voce foi nomeado Guardiao da Constelacao da sua organizacao. Prove a postura antes que a
+          ampulheta zere.
         </p>
       </header>
 
