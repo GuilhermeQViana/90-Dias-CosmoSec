@@ -35,7 +35,7 @@ export function construirBaralho(): ReadonlyArray<CartaInstancia> {
   for (const { id, copias } of BARALHO_INICIAL) {
     const carta = buscarCarta(id)
     for (let i = 0; i < copias; i += 1) {
-      cartas.push({ uid: `${id}-${i}`, carta, selado: false })
+      cartas.push({ uid: `${id}-${i}`, carta, selado: false, seladoNoTurno: null })
     }
   }
   return cartas
@@ -117,12 +117,13 @@ export function descartarDaMao(estado: EstadoCartas, uid: string): EstadoCartas 
 export function selarControle(
   estado: EstadoCartas,
   alvoUid: string,
+  turno: number | null = null,
 ): { estado: EstadoCartas; selada: CartaInstancia | null } {
   const alvo = estado.campo.find((c) => c.uid === alvoUid)
   if (!alvo || alvo.carta.tipo !== 'controle' || alvo.selado) {
     return { estado, selada: null }
   }
-  const selada: CartaInstancia = { ...alvo, selado: true }
+  const selada: CartaInstancia = { ...alvo, selado: true, seladoNoTurno: turno }
   return {
     estado: {
       ...estado,
@@ -134,4 +135,31 @@ export function selarControle(
 
 export function controlesNaoSelados(estado: EstadoCartas): ReadonlyArray<CartaInstancia> {
   return estado.campo.filter((c) => !c.selado)
+}
+
+// Remove um controle do campo (Ransomware). Vai para o descarte.
+export function destruirControle(estado: EstadoCartas, uid: string): EstadoCartas {
+  const alvo = estado.campo.find((c) => c.uid === uid)
+  if (!alvo) {
+    return estado
+  }
+  return {
+    ...estado,
+    campo: estado.campo.filter((c) => c.uid !== uid),
+    descarte: [...estado.descarte, { ...alvo, selado: false, seladoNoTurno: null }],
+  }
+}
+
+// Tira o selo de um controle (Evidencia Vencida), sem remove-lo do campo.
+export function dessellarControle(estado: EstadoCartas, uid: string): EstadoCartas {
+  return {
+    ...estado,
+    campo: estado.campo.map((c) =>
+      c.uid === uid ? { ...c, selado: false, seladoNoTurno: null } : c,
+    ),
+  }
+}
+
+export function temControleEmCampo(estado: EstadoCartas, cartaId: string): boolean {
+  return estado.campo.some((c) => c.carta.id === cartaId)
 }

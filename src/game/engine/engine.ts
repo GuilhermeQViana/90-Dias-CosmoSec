@@ -35,6 +35,7 @@ export function criarEstadoInicial(modo: ModeId): EstadoDuelo {
     recursos,
     resultado: 'em-andamento',
     controlesSelados: 0,
+    penalidadeEnergia: 0,
     trustCenterPublicado: false,
     log: [`Duelo iniciado no modo ${mode.titulo}.`],
   }
@@ -99,21 +100,49 @@ export function podePublicarTrustCenter(
 }
 
 function iniciarTurno(estado: EstadoDuelo): EstadoDuelo {
-  // Recarrega energia e faz o teto crescer devagar ate o limite.
+  // Recarrega energia e faz o teto crescer devagar ate o limite. A penalidade
+  // do DDoS, se houver, corta energia neste turno e depois zera.
   const energiaMax = Math.min(
     estado.recursos.energiaMax + BALANCE.ENERGIA_CRESCIMENTO_POR_TURNO,
     BALANCE.ENERGIA_MAX_TETO,
   )
+  const energia = Math.max(0, energiaMax - estado.penalidadeEnergia)
   const recursos: Recursos = {
     ...estado.recursos,
     energiaMax,
-    energia: energiaMax,
+    energia,
   }
   // A compra de carta em si e do sistema de cartas (M-05). Aqui so registra.
   return comLog(
-    { ...estado, fase: 'guardiao', recursos },
-    `Turno ${estado.turno} do Guardiao. Energia ${energiaMax}. Compra ${BALANCE.COMPRA_POR_TURNO}.`,
+    { ...estado, fase: 'guardiao', recursos, penalidadeEnergia: 0 },
+    `Turno ${estado.turno} do Guardiao. Energia ${energia}. Compra ${BALANCE.COMPRA_POR_TURNO}.`,
   )
+}
+
+// Aplica o dano do vilao (Posture e Dias) sem passar a vez. Usado pela IA do
+// vilao (M-06) para acumular varios efeitos antes de avancar o turno.
+export function aplicarDanoVilao(estado: EstadoDuelo, ataque: AtaqueVilao): EstadoDuelo {
+  if (estado.fase !== 'vilao' || estado.resultado !== 'em-andamento') {
+    return estado
+  }
+  const recursos: Recursos = {
+    ...estado.recursos,
+    dias: estado.recursos.dias - ataque.reducaoDias,
+    posture: clamp(
+      estado.recursos.posture - ataque.danoPostura,
+      BALANCE.POSTURE_MIN,
+      BALANCE.POSTURE_MAX,
+    ),
+  }
+  return avaliarResultado({ ...estado, recursos })
+}
+
+// Passa a vez do vilao para o Guardiao, abrindo o proximo turno.
+export function passarTurno(estado: EstadoDuelo): EstadoDuelo {
+  if (estado.fase !== 'vilao' || estado.resultado !== 'em-andamento') {
+    return estado
+  }
+  return iniciarTurno({ ...estado, turno: estado.turno + 1 })
 }
 
 function jogarCarta(estado: EstadoDuelo, jogada: JogadaCarta): EstadoDuelo {
@@ -145,32 +174,15 @@ function encerrarTurno(estado: EstadoDuelo): EstadoDuelo {
   return comLog({ ...estado, fase: 'vilao' }, 'Guardiao encerra o turno.')
 }
 
+// Turno do vilao em um passo: aplica o dano e passa a vez. Atalho usado pelos
+// testes e por chamadas simples. A IA da M-06 usa aplicarDanoVilao e passarTurno
+// separados para encadear varios efeitos.
 function turnoVilao(estado: EstadoDuelo, ataque: AtaqueVilao): EstadoDuelo {
-  if (estado.fase !== 'vilao' || estado.resultado !== 'em-andamento') {
-    return estado
+  const aposDano = aplicarDanoVilao(estado, ataque)
+  if (aposDano.resultado !== 'em-andamento') {
+    return aposDano
   }
-  const recursos: Recursos = {
-    ...estado.recursos,
-    dias: estado.recursos.dias - ataque.reducaoDias,
-    posture: clamp(
-      estado.recursos.posture - ataque.danoPostura,
-      BALANCE.POSTURE_MIN,
-      BALANCE.POSTURE_MAX,
-    ),
-  }
-  // Apos o vilao agir, passa a vez de volta e abre o proximo turno do Guardiao.
-  const aposAtaque: EstadoDuelo = {
-    ...estado,
-    recursos,
-    turno: estado.turno + 1,
-  }
-  const avaliado = avaliarResultado(
-    comLog(aposAtaque, `O 90 Dias ataca. Dias ${recursos.dias}, Posture ${recursos.posture}.`),
-  )
-  if (avaliado.resultado !== 'em-andamento') {
-    return avaliado
-  }
-  return iniciarTurno(avaliado)
+  return passarTurno(comLog(aposDano, `O 90 Dias ataca. Dias ${aposDano.recursos.dias}, Posture ${aposDano.recursos.posture}.`))
 }
 
 function publicarTrustCenter(

@@ -1,6 +1,12 @@
 import type { ModeId } from '@/game/modes'
 import { BALANCE } from '@/game/engine/balance'
-import { criarEstadoInicial, podeJogarCarta, podePublicarTrustCenter, reduzir } from '@/game/engine/engine'
+import {
+  criarEstadoInicial,
+  passarTurno,
+  podeJogarCarta,
+  podePublicarTrustCenter,
+  reduzir,
+} from '@/game/engine/engine'
 import type { EstadoDuelo } from '@/game/engine/types'
 import {
   comprar,
@@ -11,19 +17,28 @@ import {
   type EstadoCartas,
 } from '@/game/cards/deck'
 import type { CartaInstancia } from '@/game/cards/types'
+import { construirBaralhoVilao, resolverTurnoVilao } from '@/game/villain/ai'
+import type { EstadoVilao } from '@/game/villain/types'
 
-// Controlador do duelo: une o motor (recursos, vitoria) com as cartas (mao,
-// campo, baralho) em acoes de alto nivel. Puro e imutavel, para a cena Phaser
-// ficar fina e para ser testavel sem render.
+// Controlador do duelo: une o motor (recursos, vitoria), as cartas (mao, campo,
+// baralho) e o vilao (M-06) em acoes de alto nivel. Puro e imutavel.
 
 export interface EstadoJogo {
   duelo: EstadoDuelo
   cartas: EstadoCartas
+  vilao: EstadoVilao
+  // Eventos do ultimo turno do vilao, para a cena exibir.
+  ultimosEventos: ReadonlyArray<string>
 }
 
 export function iniciarDuelo(modo: ModeId, rng: () => number = Math.random): EstadoJogo {
   const cartas = comprar(estadoInicialCartas(rng), BALANCE.MAO_INICIAL)
-  return { duelo: criarEstadoInicial(modo), cartas }
+  return {
+    duelo: criarEstadoInicial(modo),
+    cartas,
+    vilao: construirBaralhoVilao(rng),
+    ultimosEventos: [],
+  }
 }
 
 // Joga um controle da mao no campo, pagando energia e dias. Ainda nao gera
@@ -43,6 +58,7 @@ export function jogarControle(estado: EstadoJogo, uid: string): EstadoJogo {
     return estado
   }
   return {
+    ...estado,
     duelo: reduzir(estado.duelo, { tipo: 'jogar-carta', jogada }),
     cartas: jogarControleNoCampo(estado.cartas, uid),
   }
@@ -50,11 +66,7 @@ export function jogarControle(estado: EstadoJogo, uid: string): EstadoJogo {
 
 // Sela um controle em campo usando um Lacre da mao. Soma Postura igual a Defesa
 // do controle e conta como prova para a regra de vitoria.
-export function selarComLacre(
-  estado: EstadoJogo,
-  lacreUid: string,
-  alvoUid: string,
-): EstadoJogo {
+export function selarComLacre(estado: EstadoJogo, lacreUid: string, alvoUid: string): EstadoJogo {
   const lacre = estado.cartas.mao.find((c) => c.uid === lacreUid)
   const alvo = estado.cartas.campo.find((c) => c.uid === alvoUid)
   if (!lacre || lacre.carta.efeito !== 'lacre') {
@@ -72,19 +84,16 @@ export function selarComLacre(
   if (!podeJogarCarta(estado.duelo, jogada)) {
     return estado
   }
-  const { estado: cartasSeladas } = selarControle(estado.cartas, alvoUid)
+  const { estado: cartasSeladas } = selarControle(estado.cartas, alvoUid, estado.duelo.turno)
   return {
+    ...estado,
     duelo: reduzir(estado.duelo, { tipo: 'jogar-carta', jogada }),
     cartas: descartarDaMao(cartasSeladas, lacreUid),
   }
 }
 
 // Anexa uma Politica Aprovada a um controle ja selado, somando 1 Postura.
-export function aplicarPolitica(
-  estado: EstadoJogo,
-  politicaUid: string,
-  alvoUid: string,
-): EstadoJogo {
+export function aplicarPolitica(estado: EstadoJogo, politicaUid: string, alvoUid: string): EstadoJogo {
   const politica = estado.cartas.mao.find((c) => c.uid === politicaUid)
   const alvo = estado.cartas.campo.find((c) => c.uid === alvoUid)
   if (!politica || politica.carta.efeito !== 'politica') {
@@ -103,6 +112,7 @@ export function aplicarPolitica(
     return estado
   }
   return {
+    ...estado,
     duelo: reduzir(estado.duelo, { tipo: 'jogar-carta', jogada }),
     cartas: descartarDaMao(estado.cartas, politicaUid),
   }
@@ -125,6 +135,7 @@ export function publicarTrustCenter(estado: EstadoJogo, demonstrarUid: string): 
     return estado
   }
   return {
+    ...estado,
     duelo: reduzir(estado.duelo, {
       tipo: 'publicar-trust-center',
       custoEnergia: carta.carta.custoEnergia,
@@ -134,41 +145,32 @@ export function publicarTrustCenter(estado: EstadoJogo, demonstrarUid: string): 
   }
 }
 
-// Encerra o turno do Guardiao, resolve o turno do vilao (placeholder M-05) e
-// compra as cartas do novo turno. A IA real do vilao chega na M-06.
-export function encerrarTurno(estado: EstadoJogo): EstadoJogo {
+// Encerra o turno do Guardiao, resolve o turno do vilao 90 Dias (IA da M-06) e
+// compra as cartas do novo turno.
+export function encerrarTurno(estado: EstadoJogo, rng: () => number = Math.random): EstadoJogo {
   if (estado.duelo.fase !== 'guardiao' || estado.duelo.resultado !== 'em-andamento') {
     return estado
   }
-  const aposEncerrar = reduzir(estado.duelo, { tipo: 'encerrar-turno' })
-  const aposVilao = reduzir(aposEncerrar, {
-    tipo: 'turno-vilao',
-    ataque: {
-      danoPostura: BALANCE.VILAO_M05_DANO_POSTURE,
-      reducaoDias: BALANCE.VILAO_M05_REDUCAO_DIAS,
-    },
-  })
-  if (aposVilao.resultado !== 'em-andamento') {
-    return { duelo: aposVilao, cartas: estado.cartas }
+  const naFaseVilao = reduzir(estado.duelo, { tipo: 'encerrar-turno' })
+  const res = resolverTurnoVilao(naFaseVilao, estado.cartas, estado.vilao, rng)
+
+  if (res.duelo.resultado !== 'em-andamento') {
+    return { duelo: res.duelo, cartas: res.cartas, vilao: res.vilao, ultimosEventos: res.eventos }
   }
-  return { duelo: aposVilao, cartas: comprar(estado.cartas, BALANCE.COMPRA_POR_TURNO) }
+  return {
+    duelo: passarTurno(res.duelo),
+    cartas: comprar(res.cartas, BALANCE.COMPRA_POR_TURNO),
+    vilao: res.vilao,
+    ultimosEventos: res.eventos,
+  }
 }
 
 // Cartas da mao que o Guardiao consegue jogar agora, para a UI destacar.
 export function cartasJogaveis(estado: EstadoJogo): ReadonlyArray<CartaInstancia> {
   return estado.cartas.mao.filter((c) => {
-    if (c.carta.tipo === 'controle') {
-      return podeJogarCarta(estado.duelo, {
-        custoEnergia: c.carta.custoEnergia,
-        custoDias: c.carta.custoDias,
-        ganhoPostura: 0,
-        selaControle: false,
-      })
-    }
     if (c.carta.efeito === 'demonstrar') {
       return podePublicar(estado, c.uid)
     }
-    // Lacre e politica precisam de alvo, a UI resolve o alvo no arraste.
     return podeJogarCarta(estado.duelo, {
       custoEnergia: c.carta.custoEnergia,
       custoDias: c.carta.custoDias,
