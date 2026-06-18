@@ -1,5 +1,5 @@
 import type { CartaInstancia, TipoCarta } from '@/game/cards/types'
-import { bonusCrosswalk } from '@/game/engine/duelController'
+import { ganhoAoSelar } from '@/game/engine/scoring'
 
 // Carta em HTML, no estilo cosmico da jornada. Serve para mao e campo.
 
@@ -17,6 +17,7 @@ interface CardViewProps {
   jogavel?: boolean
   selecionada?: boolean
   alvo?: boolean
+  seloMultiplicador?: number
   onClick?: (() => void) | undefined
 }
 
@@ -26,12 +27,13 @@ export function CardView({
   jogavel = true,
   selecionada = false,
   alvo = false,
+  seloMultiplicador = 1,
   onClick,
 }: CardViewProps): JSX.Element {
   const c = inst.carta
   const ac = ACENTO[c.tipo]
   const selado = inst.selado
-  const ganho = c.defesa + bonusCrosswalk(c.cobertura.length)
+  const ganho = ganhoAoSelar(c.defesa, c.cobertura.length, seloMultiplicador)
 
   const estado = selado
     ? 'border-cyan shadow-[0_0_18px_-4px_rgba(34,211,238,0.6)]'

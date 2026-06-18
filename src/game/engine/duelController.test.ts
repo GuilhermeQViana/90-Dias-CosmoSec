@@ -1,6 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import {
-  bonusCrosswalk,
   cartasJogaveis,
   encerrarTurno,
   iniciarDuelo,
@@ -8,6 +7,7 @@ import {
   selarComLacre,
   type EstadoJogo,
 } from '@/game/engine/duelController'
+import { ganhoAoSelar } from '@/game/engine/scoring'
 import { buscarCarta } from '@/game/cards/catalog'
 import type { CartaInstancia } from '@/game/cards/types'
 
@@ -64,8 +64,8 @@ describe('jogarControle e selarComLacre', () => {
     const seladosAntes = jogo.duelo.controlesSelados
 
     jogo = selarComLacre(jogo, lacre.uid, mfa.uid)
-    // MFA cobre 4 normas: soma Defesa mais o bonus de crosswalk.
-    const esperado = postureAntes + mfa.carta.defesa + bonusCrosswalk(mfa.carta.cobertura.length)
+    // Auditoria dobra o selo: (Defesa + crosswalk) vezes 2.
+    const esperado = postureAntes + ganhoAoSelar(mfa.carta.defesa, mfa.carta.cobertura.length, 2)
     expect(jogo.duelo.recursos.posture).toBe(esperado)
     expect(jogo.duelo.controlesSelados).toBe(seladosAntes + 1)
     const selada = jogo.cartas.campo.find((c) => c.uid === mfa.uid)

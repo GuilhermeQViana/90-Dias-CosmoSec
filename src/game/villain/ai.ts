@@ -1,7 +1,8 @@
 import { VILAO_BALANCE } from '@/game/engine/balance'
 import { aplicarDanoVilao } from '@/game/engine/engine'
+import { ganhoAoSelar } from '@/game/engine/scoring'
 import type { EstadoDuelo } from '@/game/engine/types'
-import { findMode } from '@/game/modes'
+import { findMode, type ModeId } from '@/game/modes'
 import {
   destruirControle,
   dessellarControle,
@@ -46,8 +47,21 @@ function embaralharVilao(
   return out
 }
 
-export function construirBaralhoVilao(rng: () => number = Math.random): EstadoVilao {
-  return { baralho: embaralharVilao(CATALOGO_VILAO, rng), descarte: [] }
+// Baralho do vilao com vies por modo. No Modo 1 Auditoria, copias extras de
+// Auditoria Surpresa deixam o golpe frequente, premiando a Trilha de Auditoria.
+// PROPOSTA de dificuldade sob gate humano.
+export function construirBaralhoVilao(
+  modo: ModeId,
+  rng: () => number = Math.random,
+): EstadoVilao {
+  const cartas = [...CATALOGO_VILAO]
+  if (modo === 'auditoria') {
+    const surpresa = CATALOGO_VILAO.find((c) => c.efeito === 'auditoria-surpresa')
+    if (surpresa) {
+      cartas.push(surpresa, surpresa)
+    }
+  }
+  return { baralho: embaralharVilao(cartas, rng), descarte: [] }
 }
 
 // Compra n cartas do vilao. Se o baralho acabar, reembaralha o descarte.
@@ -105,6 +119,10 @@ interface Passo {
 function resolverCarta(duelo: EstadoDuelo, cartas: EstadoCartas, carta: CartaVilao): Passo {
   const dano = (n: number): EstadoDuelo =>
     aplicarDanoVilao(duelo, { danoPostura: n, reducaoDias: 0 })
+  // Multiplicador de selo do modo, para remover a Postura real ao perder a prova.
+  const mult = findMode(duelo.modo).seloMultiplicador
+  const valorSelo = (c: CartaInstancia): number =>
+    ganhoAoSelar(c.carta.defesa, c.carta.cobertura.length, mult)
 
   switch (carta.efeito) {
     case 'phishing':
@@ -122,7 +140,7 @@ function resolverCarta(duelo: EstadoDuelo, cartas: EstadoCartas, carta: CartaVil
         return { duelo, cartas, evento: 'Ransomware sem alvo no campo.' }
       }
       const cartasPos = destruirControle(cartas, alvo.uid)
-      const dueloPos = alvo.selado ? removerProva(duelo, alvo.carta.defesa) : duelo
+      const dueloPos = alvo.selado ? removerProva(duelo, valorSelo(alvo)) : duelo
       return { duelo: dueloPos, cartas: cartasPos, evento: `Ransomware destroi ${alvo.carta.nome}.` }
     }
 
@@ -159,7 +177,7 @@ function resolverCarta(duelo: EstadoDuelo, cartas: EstadoCartas, carta: CartaVil
         return { duelo, cartas, evento: 'Evidencia Vencida nao achou selo antigo.' }
       }
       return {
-        duelo: removerProva(duelo, selo.carta.defesa),
+        duelo: removerProva(duelo, valorSelo(selo)),
         cartas: dessellarControle(cartas, selo.uid),
         evento: `Evidencia Vencida derruba o selo de ${selo.carta.nome}.`,
       }

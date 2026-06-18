@@ -42,7 +42,8 @@ export function JourneyGame({ modo, modoLabel, onConcluir, onFalarCosmoSec }: Jo
   const [toast, setToast] = useState('')
   const concluido = useRef(false)
 
-  const prazo = findMode(modo).prazoDias
+  const mode = findMode(modo)
+  const prazo = mode.prazoDias
   const ato = atoIndex(prazo, jogo.duelo.recursos.dias)
   const narrativa = narrativaDoAto(ato)
   const r = jogo.duelo.recursos
@@ -144,11 +145,15 @@ export function JourneyGame({ modo, modoLabel, onConcluir, onFalarCosmoSec }: Jo
               {r.dias} <span className="text-xs font-normal text-slate-400">dias</span>
             </div>
             <div className="mt-1 text-[11px] text-blue300">
-              Energia {r.energia}/{r.energiaMax} . Selados {jogo.duelo.controlesSelados}/{findMode(modo).minControlesSelados}
+              Energia {r.energia}/{r.energiaMax} . Selados {jogo.duelo.controlesSelados}/{mode.minControlesSelados}
             </div>
           </div>
           <Gauge score={r.posture} />
         </div>
+      </div>
+
+      <div className="text-center font-mono text-[10px] tracking-wide text-cyan/70">
+        Regra da arena: {mode.regra}
       </div>
 
       {/* Narrativa do ato */}
@@ -172,6 +177,7 @@ export function JourneyGame({ modo, modoLabel, onConcluir, onFalarCosmoSec }: Jo
                 inst={inst}
                 contexto="campo"
                 alvo={alvoCampo(inst)}
+                seloMultiplicador={mode.seloMultiplicador}
                 onClick={sel ? () => clicarCampo(inst) : undefined}
               />
             ))}
@@ -207,6 +213,7 @@ export function JourneyGame({ modo, modoLabel, onConcluir, onFalarCosmoSec }: Jo
             contexto="mao"
             jogavel={jogaveis.has(inst.uid)}
             selecionada={sel?.uid === inst.uid}
+            seloMultiplicador={mode.seloMultiplicador}
             onClick={() => clicarMao(inst)}
           />
         ))}

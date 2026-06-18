@@ -17,6 +17,9 @@ export interface GameMode {
   minControlesSelados: number
   // Se true, a vitoria so fecha jogando Publicar Trust Center (modo RFP).
   exigeTrustCenter: boolean
+  // Multiplicador de Postura ao selar. Modo 1 Auditoria: prova selada vale
+  // dobrado (2). Demais modos: 1. PROPOSTA sob gate de score.
+  seloMultiplicador: number
   regra: string
   licao: string
 }
@@ -32,6 +35,7 @@ export const MODES: readonly GameMode[] = [
     prazoDias: 90,
     minControlesSelados: 4,
     exigeTrustCenter: false,
+    seloMultiplicador: 2,
     regra: 'Prova selada vale dobrado. Auditoria Surpresa e frequente.',
     licao: 'Prova lacrada vence o improviso.',
   },
@@ -45,6 +49,7 @@ export const MODES: readonly GameMode[] = [
     prazoDias: 75,
     minControlesSelados: 4,
     exigeTrustCenter: false,
+    seloMultiplicador: 1,
     regra: 'Exige o Campo BACEN CMN com residencia sa-east-1 ativo. Prazo Apertado e Achado Critico frequentes.',
     licao: 'O crosswalk BCB CMN e LGPD e o moat, uma prova vale varias normas.',
   },
@@ -58,6 +63,7 @@ export const MODES: readonly GameMode[] = [
     prazoDias: 90,
     minControlesSelados: 6,
     exigeTrustCenter: true,
+    seloMultiplicador: 1,
     regra: 'Campo ISO 27001 ativo e 6 controles selados. Termina com Publicar Trust Center.',
     licao: 'Demonstrar fecha negocio, o Trust Center e a arma de saida.',
   },
