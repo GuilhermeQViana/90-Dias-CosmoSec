@@ -32,11 +32,11 @@ export function Field({
       {children}
       {hint && !error ? <p className="font-body text-xs text-white/45">{hint}</p> : null}
       {error ? (
-        <p id={describedBy} role="alert" className="font-body text-xs text-red-300">
+        <p id={describedBy} role="alert" className="font-body text-xs text-danger">
           {error}
         </p>
       ) : warning ? (
-        <p id={describedBy} className="font-body text-xs text-amber-300">
+        <p id={describedBy} className="font-body text-xs text-warn">
           {warning}
         </p>
       ) : null}

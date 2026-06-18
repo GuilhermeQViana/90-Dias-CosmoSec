@@ -36,7 +36,7 @@ export function ResultadoScreen({
       <span className="font-mono text-xs uppercase tracking-[0.2em] text-cyan/80">
         {mode.titulo}
       </span>
-      <h2 className={`font-display text-3xl font-bold ${venceu ? 'text-cyan' : 'text-red-300'}`}>
+      <h2 className={`font-display text-3xl font-bold ${venceu ? 'text-cyan' : 'text-danger'}`}>
         {venceu ? 'A constelacao acende' : 'O 90 Dias prevaleceu'}
       </h2>
 

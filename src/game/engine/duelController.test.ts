@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  bonusCrosswalk,
   cartasJogaveis,
   encerrarTurno,
   iniciarDuelo,
@@ -63,11 +64,32 @@ describe('jogarControle e selarComLacre', () => {
     const seladosAntes = jogo.duelo.controlesSelados
 
     jogo = selarComLacre(jogo, lacre.uid, mfa.uid)
-    expect(jogo.duelo.recursos.posture).toBe(postureAntes + mfa.carta.defesa)
+    // MFA cobre 4 normas: soma Defesa mais o bonus de crosswalk.
+    const esperado = postureAntes + mfa.carta.defesa + bonusCrosswalk(mfa.carta.cobertura.length)
+    expect(jogo.duelo.recursos.posture).toBe(esperado)
     expect(jogo.duelo.controlesSelados).toBe(seladosAntes + 1)
     const selada = jogo.cartas.campo.find((c) => c.uid === mfa.uid)
     expect(selada?.selado).toBe(true)
     expect(selada?.seladoNoTurno).toBe(jogo.duelo.turno)
+  })
+
+  it('o combo de crosswalk paga: MFA (4 normas) vale mais que EDR (1 norma) com mesma Defesa', () => {
+    const mfa = inst('mfa') // Def 3, 4 normas
+    const edr = inst('edr') // Def 3, 1 norma
+    const l1 = inst('lacre-sha256')
+    const l2 = inst('lacre-sha256')
+    let jogo = comMao(comRecursos(iniciarDuelo('auditoria', rngFixo), 12, 40), [mfa, edr, l1, l2])
+
+    jogo = jogarControle(jogo, mfa.uid)
+    jogo = jogarControle(jogo, edr.uid)
+    const base = jogo.duelo.recursos.posture
+    jogo = selarComLacre(jogo, l1.uid, mfa.uid)
+    const ganhoMfa = jogo.duelo.recursos.posture - base
+    const apos = jogo.duelo.recursos.posture
+    jogo = selarComLacre(jogo, l2.uid, edr.uid)
+    const ganhoEdr = jogo.duelo.recursos.posture - apos
+
+    expect(ganhoMfa).toBeGreaterThan(ganhoEdr)
   })
 })
 

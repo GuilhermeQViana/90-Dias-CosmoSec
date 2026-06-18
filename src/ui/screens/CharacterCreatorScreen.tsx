@@ -167,7 +167,7 @@ export function CharacterCreatorScreen({
           </span>
         </label>
         {showErrors && result.errors.consentimento ? (
-          <p role="alert" className="font-body text-xs text-red-300">
+          <p role="alert" className="font-body text-xs text-danger">
             {result.errors.consentimento}
           </p>
         ) : null}
