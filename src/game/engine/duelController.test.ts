@@ -7,77 +7,89 @@ import {
   selarComLacre,
   type EstadoJogo,
 } from '@/game/engine/duelController'
+import { buscarCarta } from '@/game/cards/catalog'
+import type { CartaInstancia } from '@/game/cards/types'
 
-// rng deterministico para baralho reproduzivel nos testes.
 const rngFixo = () => 0
 
-function maoTem(estado: EstadoJogo, efeito: string): string | undefined {
-  return estado.cartas.mao.find((c) => c.carta.efeito === efeito)?.uid
+function inst(id: string): CartaInstancia {
+  return { uid: `${id}-test`, carta: buscarCarta(id), selado: false, seladoNoTurno: null }
+}
+
+// Coloca cartas conhecidas na mao, para nao depender da ordem do embaralhamento.
+function comMao(jogo: EstadoJogo, mao: CartaInstancia[]): EstadoJogo {
+  return { ...jogo, cartas: { ...jogo.cartas, mao } }
+}
+
+// Ajusta recursos direto, para testar jogadas sem depender do dano do vilao.
+function comRecursos(jogo: EstadoJogo, energia: number, posture: number): EstadoJogo {
+  return {
+    ...jogo,
+    duelo: {
+      ...jogo.duelo,
+      recursos: { ...jogo.duelo.recursos, energia, energiaMax: Math.max(energia, jogo.duelo.recursos.energiaMax), posture },
+    },
+  }
 }
 
 describe('iniciarDuelo', () => {
-  it('comeca com mao inicial e recursos do modo', () => {
+  it('comeca com mao inicial, recursos do modo e baralho do vilao', () => {
     const jogo = iniciarDuelo('auditoria', rngFixo)
     expect(jogo.cartas.mao.length).toBeGreaterThan(0)
     expect(jogo.duelo.recursos.dias).toBe(90)
     expect(jogo.duelo.fase).toBe('guardiao')
+    expect(jogo.vilao.baralho.length).toBeGreaterThan(0)
   })
 })
 
 describe('jogarControle e selarComLacre', () => {
-  it('joga controle no campo gastando recursos, sem somar Postura ainda', () => {
-    let jogo = iniciarDuelo('auditoria', rngFixo)
-    // Garante energia e dias suficientes avancando ate ter folga de energia.
-    jogo = encerrarTurno(jogo) // turno 2, energia recarregada e maior
-    const controleUid = jogo.cartas.mao.find((c) => c.carta.tipo === 'controle')?.uid
-    if (!controleUid) throw new Error('precisa de um controle na mao')
+  it('joga controle no campo sem somar Postura ainda', () => {
+    const mfa = inst('mfa')
+    let jogo = comMao(comRecursos(iniciarDuelo('auditoria', rngFixo), 6, 40), [mfa])
 
     const postureAntes = jogo.duelo.recursos.posture
-    jogo = jogarControle(jogo, controleUid)
-    expect(jogo.cartas.campo.some((c) => c.uid === controleUid)).toBe(true)
-    // Controle sozinho nao soma Postura. So ao selar.
+    jogo = jogarControle(jogo, mfa.uid)
+    expect(jogo.cartas.campo.some((c) => c.uid === mfa.uid)).toBe(true)
     expect(jogo.duelo.recursos.posture).toBe(postureAntes)
   })
 
-  it('selar com lacre soma Postura igual a Defesa e conta como prova', () => {
-    let jogo = iniciarDuelo('auditoria', rngFixo)
-    // Avanca alguns turnos para ter energia para controle e lacre no mesmo turno.
-    jogo = encerrarTurno(jogo)
-    jogo = encerrarTurno(jogo)
-    jogo = encerrarTurno(jogo)
+  it('selar com lacre soma Postura igual a Defesa e marca o turno do selo', () => {
+    const mfa = inst('mfa')
+    const lacre = inst('lacre-sha256')
+    let jogo = comMao(comRecursos(iniciarDuelo('auditoria', rngFixo), 6, 40), [mfa, lacre])
 
-    const controle = jogo.cartas.mao.find((c) => c.carta.tipo === 'controle')
-    const lacreUid = maoTem(jogo, 'lacre')
-    if (!controle || !lacreUid) throw new Error('precisa de controle e lacre na mao')
-
-    jogo = jogarControle(jogo, controle.uid)
+    jogo = jogarControle(jogo, mfa.uid)
     const postureAntes = jogo.duelo.recursos.posture
     const seladosAntes = jogo.duelo.controlesSelados
 
-    jogo = selarComLacre(jogo, lacreUid, controle.uid)
-    expect(jogo.duelo.recursos.posture).toBe(postureAntes + controle.carta.defesa)
+    jogo = selarComLacre(jogo, lacre.uid, mfa.uid)
+    expect(jogo.duelo.recursos.posture).toBe(postureAntes + mfa.carta.defesa)
     expect(jogo.duelo.controlesSelados).toBe(seladosAntes + 1)
-    expect(jogo.cartas.campo.find((c) => c.uid === controle.uid)?.selado).toBe(true)
+    const selada = jogo.cartas.campo.find((c) => c.uid === mfa.uid)
+    expect(selada?.selado).toBe(true)
+    expect(selada?.seladoNoTurno).toBe(jogo.duelo.turno)
   })
 })
 
-describe('encerrarTurno', () => {
-  it('consome Dias do vilao e compra carta no novo turno', () => {
-    const jogo = iniciarDuelo('auditoria', rngFixo)
+describe('encerrarTurno com vilao', () => {
+  it('o vilao consome Dias, gera eventos e o Guardiao compra no novo turno', () => {
+    // Posture alta para o duelo nao terminar no teste.
+    const jogo = comRecursos(iniciarDuelo('auditoria', rngFixo), 1, 100)
     const diasAntes = jogo.duelo.recursos.dias
     const maoAntes = jogo.cartas.mao.length
-    const depois = encerrarTurno(jogo)
+
+    const depois = encerrarTurno(jogo, rngFixo)
     expect(depois.duelo.recursos.dias).toBeLessThan(diasAntes)
     expect(depois.duelo.turno).toBe(jogo.duelo.turno + 1)
     expect(depois.cartas.mao.length).toBe(maoAntes + 1)
+    expect(depois.ultimosEventos.length).toBeGreaterThan(0)
   })
 })
 
 describe('cartasJogaveis', () => {
   it('lista so cartas dentro da energia atual', () => {
-    const jogo = iniciarDuelo('auditoria', rngFixo) // energia 1 no turno 1
-    const jogaveis = cartasJogaveis(jogo)
-    for (const c of jogaveis) {
+    const jogo = iniciarDuelo('auditoria', rngFixo)
+    for (const c of cartasJogaveis(jogo)) {
       expect(c.carta.custoEnergia).toBeLessThanOrEqual(jogo.duelo.recursos.energia)
     }
   })

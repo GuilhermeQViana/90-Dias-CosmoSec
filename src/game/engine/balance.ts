@@ -26,11 +26,33 @@ export const BALANCE = {
   // Tamanho da mao inicial no comeco do duelo.
   MAO_INICIAL: 5,
 
-  // Ataque placeholder do vilao na fatia M-05. A IA real, o baralho e o
-  // escalonamento entram na M-06. Aqui o 90 Dias so consome o relogio.
-  VILAO_M05_REDUCAO_DIAS: 6,
-  VILAO_M05_DANO_POSTURE: 0,
-
   // A partir de qual turno Publicar Trust Center fica jogavel (custo alto, fim de jogo).
   TURNO_MIN_TRUST_CENTER: 6,
+} as const
+
+// Balanceamento do vilao 90 Dias (M-06). PROPOSTA sob gate de score (secao 14).
+// Os danos respondem as defesas do Guardiao: o controle certo no campo absorve
+// ou reduz o golpe. Isso ensina que prova e cobertura valem mais que improviso.
+export const VILAO_BALANCE = {
+  // Relogio que cai a cada turno do vilao, antes dos efeitos das cartas.
+  REDUCAO_DIAS_BASE: 5,
+  // A cada tantos Dias gastos, o vilao saca uma carta a mais por turno.
+  ESCALONAMENTO_DIAS: 18,
+
+  // Ameacas
+  PHISHING_DANO: 8, // absorvido por MFA
+  VAZAMENTO_DANO: 6, // reduzido por IAM
+  VAZAMENTO_DANO_REDUZIDO: 2,
+  INSIDER_DANO: 6, // reduzido por Segregacao de Funcoes
+  INSIDER_DANO_REDUZIDO: 3,
+  DDOS_PENALIDADE_ENERGIA: 1, // bloqueia uma carta no proximo turno
+
+  // Decadencia
+  EVIDENCIA_VENCIDA_IDADE: 2, // selo com idade a partir disso fica vulneravel
+  PRAZO_APERTADO_DIAS: 8, // acelera o relogio
+  LACUNA_DANO: 4, // gap nao coberto
+
+  // Pressao
+  AUDITORIA_SURPRESA_DANO: 10, // defendido por Trilha de Auditoria
+  ACHADO_CRITICO_DANO: 6,
 } as const

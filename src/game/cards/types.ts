@@ -51,4 +51,7 @@ export interface CartaInstancia {
   carta: Carta
   // Para controles em campo: se ja foi selado como prova.
   selado: boolean
+  // Turno em que foi selado. Usado pela Evidencia Vencida do vilao para saber
+  // se o selo ainda esta fresco (imune) ou ja envelheceu.
+  seladoNoTurno: number | null
 }

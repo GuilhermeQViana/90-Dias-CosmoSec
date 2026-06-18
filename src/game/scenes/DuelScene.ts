@@ -47,6 +47,9 @@ export class DuelScene extends Phaser.Scene {
   private hudTurno!: Phaser.GameObjects.Text
   private barraPosture!: Phaser.GameObjects.Rectangle
   private toast!: Phaser.GameObjects.Text
+  private ampulheta!: Phaser.GameObjects.Container
+  private pulseTween?: Phaser.Tweens.Tween
+  private eventosTxt!: Phaser.GameObjects.Text
   private encerrado = false
 
   constructor() {
@@ -118,6 +121,18 @@ export class DuelScene extends Phaser.Scene {
       color: '#22D3EE',
     })
 
+    // Ampulheta do vilao 90 Dias no topo. Pulsa mais rapido quando o tempo aperta.
+    this.criarAmpulheta()
+
+    // Log dos ataques do vilao no ultimo turno.
+    this.eventosTxt = this.add.text(24, 116, '', {
+      fontFamily: 'Inter, sans-serif',
+      fontSize: '11px',
+      color: '#94A3B8',
+      lineSpacing: 3,
+      wordWrap: { width: 260 },
+    })
+
     // Botao encerrar turno.
     this.criarBotao('Encerrar turno', () => this.aoEncerrarTurno())
 
@@ -154,6 +169,33 @@ export class DuelScene extends Phaser.Scene {
     fundo.on('pointerdown', aoClicar)
   }
 
+  private criarAmpulheta(): void {
+    const topo = this.add
+      .triangle(0, 0, 0, -22, 22, 22, -22, 22, colorsHex.blue500, 0.2)
+      .setStrokeStyle(2, colorsHex.cyan, 0.85)
+    const base = this.add
+      .triangle(0, 0, 0, 22, 22, -22, -22, -22, colorsHex.blue500, 0.2)
+      .setStrokeStyle(2, colorsHex.cyan, 0.85)
+    this.ampulheta = this.add.container(this.scale.width / 2, 46, [topo, base])
+    this.pulseTween = this.tweens.add({
+      targets: this.ampulheta,
+      scaleX: 1.08,
+      scaleY: 0.92,
+      duration: 900,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.inOut',
+    })
+  }
+
+  // A ampulheta pulsa mais rapido conforme os Dias caem. A tensao cresce de proposito.
+  private atualizarAmpulheta(dias: number): void {
+    this.ampulheta.setX(this.scale.width / 2)
+    if (this.pulseTween) {
+      this.pulseTween.timeScale = dias < 20 ? 2.4 : dias < 40 ? 1.6 : 1
+    }
+  }
+
   private mostrarToast(msg: string): void {
     this.toast.setText(msg)
     this.toast.setPosition(this.scale.width / 2, this.scale.height * 0.42)
@@ -173,6 +215,7 @@ export class DuelScene extends Phaser.Scene {
     this.hudEnergia.setText(`Energia ${r.energia}/${r.energiaMax}`).setPosition(width - 150, 46)
     this.hudPosture.setText(`${r.posture}/${mode.alvoPostura}`)
     this.barraPosture.width = 220 * Phaser.Math.Clamp(r.posture / 100, 0, 1)
+    this.atualizarAmpulheta(r.dias)
 
     // Zona de campo no centro.
     this.zonaCampo = new Phaser.Geom.Rectangle(width * 0.1, height * 0.28, width * 0.8, height * 0.32)
@@ -375,6 +418,7 @@ export class DuelScene extends Phaser.Scene {
       return
     }
     this.estado = encerrarTurno(this.estado)
+    this.eventosTxt.setText(this.estado.ultimosEventos.slice(0, 5).join('\n'))
     this.renderizar()
     this.checarFim()
   }

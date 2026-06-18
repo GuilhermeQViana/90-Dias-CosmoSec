@@ -26,6 +26,8 @@ export interface EstadoDuelo {
   resultado: Resultado
   // Quantos controles ja foram selados como prova. Dirigido pelo sistema de cartas.
   controlesSelados: number
+  // Energia a menos no proximo turno do Guardiao, efeito do DDoS do vilao.
+  penalidadeEnergia: number
   // Se Publicar Trust Center ja foi jogado com sucesso.
   trustCenterPublicado: boolean
   // Trilha legivel dos eventos, util para UI e teste.
