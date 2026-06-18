@@ -1,17 +1,29 @@
 import { veredito } from '@/game/scenario/engine'
 import { Constellation } from '@/ui/scenario/Constellation'
+import { gerarCartaoCompartilhavel } from '@/ui/scenario/shareCard'
 import { Button } from '@/ui/components/Button'
 
 interface EndScreenProps {
   score: number
   diasUsados: number
+  modoLabel: string
   onJogarDeNovo: () => void
   onFalarCosmoSec: () => void
 }
 
 // Tela final: score honesto em destaque, constelacao, veredito por faixa e o
 // pitch da CosmoSec. CTA, ja que o lead foi capturado no inicio.
-export function EndScreen({ score, diasUsados, onJogarDeNovo, onFalarCosmoSec }: EndScreenProps): JSX.Element {
+export function EndScreen({
+  score,
+  diasUsados,
+  modoLabel,
+  onJogarDeNovo,
+  onFalarCosmoSec,
+}: EndScreenProps): JSX.Element {
+  function compartilhar(): void {
+    void gerarCartaoCompartilhavel({ score, modoLabel, veredito: veredito(score) })
+  }
+
   return (
     <div className="flex w-full max-w-xl flex-col items-center gap-2 px-6 py-10 text-center">
       <span className="font-mono text-[11px] tracking-[0.28em] text-cyan">
@@ -40,6 +52,9 @@ export function EndScreen({ score, diasUsados, onJogarDeNovo, onFalarCosmoSec }:
       <div className="mt-6 flex flex-wrap justify-center gap-3">
         <Button variant="ghost" onClick={onJogarDeNovo}>
           Jogar de novo
+        </Button>
+        <Button variant="ghost" onClick={compartilhar}>
+          Baixar cartao
         </Button>
         <Button variant="primary" onClick={onFalarCosmoSec}>
           Falar com a CosmoSec
