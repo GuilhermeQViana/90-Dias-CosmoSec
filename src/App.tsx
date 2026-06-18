@@ -1,25 +1,24 @@
 import { useRef, useState } from 'react'
-import { PhaserGame } from '@/game/PhaserGame'
-import { DuelGame } from '@/game/DuelGame'
-import type { DuelFim } from '@/game/scenes/DuelScene'
 import type { ModeId } from '@/game/modes'
 import { captureLead, updateLeadResult } from '@/lead/captureLeadClient'
 import { toLeadPayload } from '@/lead/validation'
 import type { GuardianForm } from '@/lead/types'
+import { CosmicBackground } from '@/ui/cosmic/CosmicBackground'
 import { MenuScreen } from '@/ui/screens/MenuScreen'
 import { ComoJogarScreen } from '@/ui/screens/ComoJogarScreen'
 import { CharacterCreatorScreen } from '@/ui/screens/CharacterCreatorScreen'
-import { ResultadoScreen } from '@/ui/screens/ResultadoScreen'
+import { ScenarioGame } from '@/ui/scenario/ScenarioGame'
 
-type Screen = 'menu' | 'como-jogar' | 'criador' | 'duelo' | 'resultado'
+type Screen = 'menu' | 'como-jogar' | 'criador' | 'jogo'
 
-// Shell do jogo. O canvas Phaser do menu e o fundo cosmico; no duelo, uma cena
-// Phaser dedicada assume a tela. A captura de lead nunca bloqueia o jogo.
+const CONTATO = 'contato@cosmosec.com.br'
+
+// Shell do jogo. Fundo cosmico three.js atras de tudo; o jogo principal e a
+// jornada de cenarios pelos cinco verbos. A captura de lead nunca bloqueia.
 export function App(): JSX.Element {
   const [screen, setScreen] = useState<Screen>('menu')
   const [mode, setMode] = useState<ModeId>('auditoria')
-  const [fim, setFim] = useState<DuelFim | null>(null)
-  // leadId guardado para o segundo POST com modo e score ao fim da partida.
+  // leadId guardado para o segundo POST com modo e score ao fim da jornada.
   const leadIdRef = useRef<string | null>(null)
 
   function handleStart(form: GuardianForm): void {
@@ -34,31 +33,28 @@ export function App(): JSX.Element {
       }
     })()
 
-    setFim(null)
-    setScreen('duelo')
+    setScreen('jogo')
   }
 
-  function handleFimDuelo(resultado: DuelFim): void {
-    setFim(resultado)
-    setScreen('resultado')
-
+  function handleConcluir(score: number): void {
     // Segundo POST: atualiza o registro com modo jogado e score final. Nao bloqueia.
-    void updateLeadResult(leadIdRef.current, {
-      modoJogado: resultado.modo,
-      scoreFinal: resultado.posture,
-    }).catch(() => {
+    void updateLeadResult(leadIdRef.current, { modoJogado: mode, scoreFinal: score }).catch(() => {
       // Falha aqui nunca afeta o jogador.
     })
   }
 
-  const noDuelo = screen === 'duelo'
+  function handleFalarCosmoSec(): void {
+    window.open(`mailto:${CONTATO}`, '_blank', 'noopener')
+  }
 
   return (
-    <main className="relative h-full w-full overflow-hidden bg-deep-space">
-      {/* Fundo cosmico do menu. Sai de cena durante o duelo. */}
-      {!noDuelo ? <PhaserGame /> : null}
-
-      {noDuelo ? <DuelGame modo={mode} onFim={handleFimDuelo} /> : null}
+    <main className="relative h-full w-full overflow-hidden">
+      <CosmicBackground />
+      {/* Vinheta suave por cima do fundo. */}
+      <div
+        className="pointer-events-none fixed inset-0 z-[1]"
+        style={{ background: 'radial-gradient(120% 100% at 50% 45%, transparent 55%, rgba(0,0,0,0.5) 100%)' }}
+      />
 
       <div className="pointer-events-none absolute inset-0 z-10 flex items-start justify-center overflow-y-auto">
         {screen === 'menu' ? (
@@ -73,24 +69,11 @@ export function App(): JSX.Element {
         {screen === 'como-jogar' ? <ComoJogarScreen onBack={() => setScreen('menu')} /> : null}
 
         {screen === 'criador' ? (
-          <CharacterCreatorScreen
-            modeId={mode}
-            onBack={() => setScreen('menu')}
-            onStart={handleStart}
-          />
+          <CharacterCreatorScreen modeId={mode} onBack={() => setScreen('menu')} onStart={handleStart} />
         ) : null}
 
-        {screen === 'resultado' && fim ? (
-          <ResultadoScreen
-            modo={fim.modo}
-            resultado={fim.resultado}
-            posture={fim.posture}
-            onJogarDeNovo={() => {
-              setFim(null)
-              setScreen('duelo')
-            }}
-            onMenu={() => setScreen('menu')}
-          />
+        {screen === 'jogo' ? (
+          <ScenarioGame onConcluir={handleConcluir} onFalarCosmoSec={handleFalarCosmoSec} />
         ) : null}
       </div>
     </main>
