@@ -5,7 +5,7 @@ import { buscarCarta } from '@/game/cards/catalog'
 import type { CartaInstancia } from '@/game/cards/types'
 import type { EstadoCartas } from '@/game/cards/deck'
 import { CATALOGO_VILAO } from '@/game/villain/catalog'
-import { escalonamento, resolverTurnoVilao } from '@/game/villain/ai'
+import { construirBaralhoVilao, escalonamento, resolverTurnoVilao } from '@/game/villain/ai'
 import type { CartaVilao, EstadoVilao } from '@/game/villain/types'
 
 const rng = () => 0
@@ -26,6 +26,29 @@ function vilaoCom(id: string): EstadoVilao {
   const carta = CATALOGO_VILAO.find((c) => c.id === id) as CartaVilao
   return { baralho: [carta], descarte: [] }
 }
+
+describe('construirBaralhoVilao por modo', () => {
+  const conta = (v: EstadoVilao, id: string): number => v.baralho.filter((c) => c.id === id).length
+
+  it('Modo Auditoria tem Auditoria Surpresa frequente', () => {
+    const v = construirBaralhoVilao('auditoria', rng)
+    expect(conta(v, 'auditoria-surpresa')).toBe(3)
+  })
+
+  it('Outros modos mantem o baralho base', () => {
+    expect(conta(construirBaralhoVilao('regulador', rng), 'auditoria-surpresa')).toBe(1)
+    expect(construirBaralhoVilao('rfp', rng).baralho).toHaveLength(CATALOGO_VILAO.length)
+  })
+})
+
+describe('perda de selo remove a Postura real', () => {
+  it('Ransomware num selo dobrado da Auditoria remove o valor cheio', () => {
+    // MFA selado: ganho de selo na Auditoria = (3 + 6) * 2 = 18.
+    const r = resolverTurnoVilao(dueloVilao(50), cartasCom(controle('mfa', true, 1)), vilaoCom('ransomware'), rng)
+    expect(r.cartas.campo).toHaveLength(0)
+    expect(r.duelo.recursos.posture).toBe(50 - 18)
+  })
+})
 
 describe('escalonamento', () => {
   it('comeca em 1 e cresce a cada janela de 18 dias gastos', () => {

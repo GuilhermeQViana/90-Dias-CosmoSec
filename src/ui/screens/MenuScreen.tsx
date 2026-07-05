@@ -62,13 +62,19 @@ export function MenuScreen({
         </div>
       </section>
 
-      <div className="flex flex-wrap items-center justify-center gap-3">
-        <Button variant="primary" onClick={onPlay}>
-          Jogar
-        </Button>
-        <Button variant="ghost" onClick={onHowToPlay}>
-          Como jogar
-        </Button>
+      <div className="flex flex-col items-center gap-3">
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <Button variant="primary" onClick={onPlay}>
+            Iniciar a jornada
+          </Button>
+          <Button variant="ghost" onClick={onHowToPlay}>
+            Como jogar
+          </Button>
+        </div>
+        <p className="max-w-md font-body text-[11px] leading-relaxed text-slate-500">
+          Um duelo de cartas pelos cinco verbos da metodologia, dos primeiros controles ao Trust
+          Center, contra o vilao 90 Dias.
+        </p>
       </div>
     </div>
   )
